@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Time Tracker — 100% Free Time Tracking Web App</title>
+<meta name="description" content="A 100% free, local time tracker: clients, projects, tasks, a timer, a weekly calendar view, hourly rates and billable/unbillable tracking. Created by Arno Faure.">
+
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
+<link rel="shortcut icon" href="icons/favicon.ico">
+<link rel="icon" type="image/png" sizes="96x96" href="icons/favicon-96x96.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0d0d">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://time.arnofaure.com">
+<meta property="og:title" content="Time Tracker — 100% Free Time Tracking Web App">
+<meta property="og:description" content="A 100% free, local time tracker: clients, projects, tasks, a timer, a weekly calendar view, hourly rates and billable/unbillable tracking.">
+<meta property="og:image" content="time-opengraph.png">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Time Tracker — 100% Free Time Tracking Web App">
+<meta name="twitter:description" content="A 100% free, local time tracker: clients, projects, tasks, a timer, a weekly calendar view, hourly rates and billable/unbillable tracking.">
+<meta name="twitter:image" content="time-opengraph.png">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --surface2: #1f1f1f;
+    --border: rgba(255,255,255,0.08);
+    --border-hover: rgba(255,255,255,0.18);
+    --text: #e8e8e8;
+    --text-muted: #999999;
+    --text-dim: #5a5a5a;
+    --accent: #e8e8e8;
+    --danger: #e0584a;
+    --radius: 6px;
+    --radius-lg: 10px;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 13px;
+    min-height: 100vh;
+  }
+
+  button, input { font-family: inherit; }
+
+  /* TOOLBAR */
+  #toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(13,13,13,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 0.5px solid var(--border);
+    padding: 10px 20px;
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    row-gap: 10px;
+  }
+
+  .tb-menu { position: relative; }
+  .tb-menu-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 6px 4px 0;
+    border-radius: var(--radius);
+    transition: background 0.15s;
+    height: 40px;
+  }
+  .tb-menu-btn:hover, .tb-menu-btn.open { background: var(--surface2); }
+  .tb-menu-btn svg.tb-chevron { color: var(--text-dim); transition: transform 0.15s; flex-shrink: 0; }
+  .tb-menu-btn.open svg.tb-chevron { transform: rotate(180deg); }
+
+  .tb-logo-square {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .tb-logo { height: 26px; width: auto; color: var(--text); display: block; }
+
+  .tb-dropdown {
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    min-width: 220px;
+    background: #1a1a1a;
+    border: 0.5px solid var(--border-hover);
+    border-radius: var(--radius);
+    padding: 6px;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.45);
+    z-index: 200;
+  }
+  .tb-dropdown.open { display: flex; }
+  .tb-menu-heading {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 6px 8px;
+  }
+  .tb-sep-h { height: 0.5px; background: var(--border); margin: 4px 2px; }
+
+  .tb-btn {
+    background: transparent;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    font-size: 12px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tb-btn:hover { background: var(--surface2); color: var(--text); }
+  .tb-btn.danger { color: var(--danger); }
+  .tb-btn.danger:hover { background: rgba(224,88,74,0.1); }
+
+  .tb-dropdown .tb-btn {
+    width: 100%;
+    text-align: left;
+    border-color: transparent;
+  }
+
+  /* VIEW SWITCH — top toolbar, always visible */
+  .tb-view-switch {
+    display: flex;
+    align-items: center;
+    background: var(--surface2);
+    border-radius: var(--radius);
+    padding: 2px;
+    gap: 2px;
+  }
+  .view-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+  }
+  .view-btn.active {
+    background: var(--text);
+    color: var(--bg);
+    font-weight: 600;
+  }
+  .view-btn.active:hover { background: var(--text); color: var(--bg); }
+
+  .tb-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  #running-indicator {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #4ade80;
+  }
+  #running-indicator.show { display: flex; }
+  #running-indicator .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #4ade80;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+  #grand-total {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  #grand-total .cost { color: var(--text-muted); font-weight: 400; margin-left: 8px; }
+
+  /* MAIN */
+  #main { max-width: 920px; margin: 0 auto; padding: 24px 20px 60px; }
+
+  .text-input {
+    background: transparent;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 13px;
+    padding: 8px 10px;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.15s;
+  }
+  .text-input:hover, .text-input:focus { border-color: var(--border-hover); }
+  .text-input::placeholder { color: var(--text-dim); }
+
+  #add-client-row { margin-bottom: 20px; }
+
+  #empty-state {
+    display: none;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+  #empty-state.show { display: block; }
+
+  /* CLIENT */
+  .client-block {
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+
+  .client-color-btn {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.25);
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 0;
+    transition: transform 0.1s;
+  }
+  .client-color-btn:hover { transform: scale(1.15); }
+  .client-header, .project-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .client-header { border-bottom: 0.5px solid var(--border); }
+  .client-block.collapsed .client-header { border-bottom-color: transparent; }
+
+  .row-arrow {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .row-arrow svg { transition: transform 0.15s; }
+  .collapsed .row-arrow svg { transform: rotate(-90deg); }
+
+  .row-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid transparent;
+    outline: none;
+    flex: 1;
+    min-width: 0;
+    padding: 2px 0;
+  }
+  .row-name:focus { border-bottom-color: var(--border-hover); }
+  .project-header .row-name { font-size: 12.5px; font-weight: 500; }
+
+  .rate-override {
+    width: 58px;
+    flex-shrink: 0;
+    background: transparent;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    font-size: 11px;
+    padding: 3px 6px;
+    outline: none;
+    text-align: right;
+  }
+  .rate-override:hover, .rate-override:focus { border-color: var(--border-hover); color: var(--text); }
+  .rate-override::placeholder { color: var(--text-dim); }
+
+  .row-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .row-meta .cost { color: var(--text-dim); margin-left: 6px; }
+
+  .row-del {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-dim);
+    padding: 3px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.1s, color 0.1s, background 0.1s;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+  }
+  .client-header:hover .row-del, .project-header:hover .row-del, .task-row:hover .row-del { opacity: 1; }
+  .row-del:hover { color: var(--danger); background: rgba(224,88,74,0.1); }
+
+  .client-body { padding: 4px 12px 12px; }
+  .client-block.collapsed .client-body { display: none; }
+
+  .add-inline { margin: 6px 0 10px; }
+  .add-inline input { font-size: 12px; padding: 6px 9px; }
+
+  /* PROJECT */
+  .project-block {
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface2);
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+  .project-header { padding: 8px 10px; border-bottom: 0.5px solid var(--border); }
+  .project-block.collapsed .project-header { border-bottom-color: transparent; }
+  .project-body { padding: 4px 10px 10px; }
+  .project-block.collapsed .project-body { display: none; }
+
+  /* TASK */
+  .task-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 6px;
+    border-radius: var(--radius);
+    transition: background 0.1s;
+  }
+  .task-row:hover { background: rgba(255,255,255,0.03); }
+  .task-row + .task-row { border-top: 0.5px solid var(--border); }
+  .task-row.non-billable .task-name { color: var(--text-muted); }
+
+  .task-name {
+    font-size: 12.5px;
+    color: var(--text);
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid transparent;
+    outline: none;
+    flex: 1;
+    min-width: 0;
+    padding: 2px 0;
+  }
+  .task-name:focus { border-bottom-color: var(--border-hover); }
+
+  .task-time {
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+    min-width: 64px;
+    text-align: right;
+  }
+  .task-row.running .task-time { color: #4ade80; font-weight: 600; }
+  .task-cost {
+    font-size: 11px;
+    color: var(--text-dim);
+    min-width: 66px;
+    text-align: right;
+  }
+  .task-cost.unbillable { font-style: italic; }
+
+  .icon-btn {
+    background: none;
+    border: 0.5px solid var(--border);
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    cursor: pointer;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .icon-btn:hover { border-color: var(--border-hover); color: var(--text); }
+  .icon-btn.play { color: #4ade80; border-color: rgba(74,222,128,0.4); background: rgba(74,222,128,0.1); }
+  .icon-btn.play:hover { background: rgba(74,222,128,0.2); border-color: rgba(74,222,128,0.7); }
+  .icon-btn.stop { color: #f87171; border-color: rgba(248,113,113,0.4); background: rgba(248,113,113,0.1); }
+  .icon-btn.stop:hover { background: rgba(248,113,113,0.2); border-color: rgba(248,113,113,0.7); }
+  .icon-btn.add-time { border: none; color: var(--text-dim); }
+  .icon-btn.add-time:hover { color: var(--text); background: var(--surface); }
+  .icon-btn.billable-toggle { border: none; color: var(--text-dim); }
+  .icon-btn.billable-toggle.is-billable { color: #60a5fa; }
+  .icon-btn.billable-toggle:hover { background: var(--surface); color: var(--text); }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    position: relative;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    max-width: 360px;
+    width: 100%;
+    padding: 22px;
+    color: var(--text);
+  }
+  .modal h2 { font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+  .modal label {
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+    margin-top: 14px;
+  }
+  .modal label:first-of-type { margin-top: 0; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
+  .modal-actions .tb-btn { border: 0.5px solid var(--border-hover); }
+  .modal-actions .primary { background: var(--text); color: var(--bg); font-weight: 600; }
+  .modal-actions .primary:hover { opacity: 0.85; background: var(--text); }
+  .modal-close {
+    position: absolute;
+    top: 10px; right: 10px;
+    background: none; border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+  }
+  .modal-close:hover { color: var(--text); }
+
+  .entries-modal-list {
+    max-height: 340px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .entry-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 9px;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .entry-row-info { flex: 1; min-width: 0; font-size: 12px; }
+  .entry-row-date { color: var(--text-muted); font-size: 11px; }
+  .entry-row-time { color: var(--text); display: block; }
+  .entry-row-dur { color: var(--text-dim); font-size: 11px; }
+  .entry-row-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  .entry-row .icon-btn { width: 22px; height: 22px; }
+  .entries-empty { text-align: center; color: var(--text-dim); font-size: 12px; padding: 20px; }
+
+  #page-footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  #page-footer a { color: var(--text-dim); text-decoration: none; }
+  #page-footer a:hover { color: var(--text-muted); text-decoration: underline; }
+  #page-footer .footer-credit { display: block; margin-top: 4px; }
+
+  /* CALENDAR VIEW */
+  #calendar-view { display: none; }
+  #calendar-view.show { display: block; }
+  #list-view.hide { display: none; }
+
+  .cal-nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+  .cal-range-label { font-size: 13px; font-weight: 600; min-width: 170px; }
+  .cal-week-total { margin-left: auto; font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .cal-week-total .cost { color: var(--text-dim); margin-left: 8px; }
+
+  .cal-grid-wrap {
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .cal-header-row {
+    display: grid;
+    grid-template-columns: 52px repeat(7, 1fr);
+    border-bottom: 0.5px solid var(--border);
+  }
+  .cal-header-cell {
+    padding: 8px 4px;
+    text-align: center;
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-left: 0.5px solid var(--border);
+  }
+  .cal-header-cell:first-child { border-left: none; }
+  .cal-header-cell.today { color: #4ade80; }
+  .cal-date-num { display: block; font-size: 14px; margin-top: 2px; color: var(--text); font-weight: 600; }
+  .cal-header-cell.today .cal-date-num { color: #4ade80; }
+
+  .cal-body {
+    position: relative;
+    display: grid;
+    grid-template-columns: 52px repeat(7, 1fr);
+    max-height: 560px;
+    overflow-y: auto;
+  }
+  .cal-time-col { display: flex; flex-direction: column; }
+  .cal-hour-label {
+    height: 48px;
+    font-size: 10px;
+    color: var(--text-dim);
+    text-align: right;
+    padding-right: 6px;
+    transform: translateY(-6px);
+    flex-shrink: 0;
+  }
+  .cal-day-col {
+    position: relative;
+    border-left: 0.5px solid var(--border);
+    height: 1152px;
+    background-image: repeating-linear-gradient(to bottom, var(--border), var(--border) 0.5px, transparent 0.5px, transparent 48px);
+  }
+  .cal-day-col.today { background-color: rgba(74,222,128,0.03); }
+
+  .cal-block {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    border-radius: 4px;
+    padding: 2px 5px;
+    font-size: 10px;
+    color: #0d0d0d;
+    overflow: hidden;
+    line-height: 1.3;
+  }
+  .cal-block.non-billable { opacity: 0.5; }
+  .cal-block-title { font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-block-time { display: block; opacity: 0.85; font-size: 9px; white-space: nowrap; overflow: hidden; }
+
+  .cal-now-line {
+    position: absolute;
+    left: 0; right: 0; height: 0;
+    border-top: 1.5px solid #ef4444;
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  #calendar-empty {
+    display: none;
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+  #calendar-empty.show { display: block; }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <div class="tb-menu">
+    <button id="logo-btn" class="tb-menu-btn">
+      <span class="tb-logo-square">
+        <svg class="tb-logo" viewBox="0 0 362 661" xmlns="http://www.w3.org/2000/svg">
+          <g transform="matrix(1,0,0,1,-3492.815188,-209.556655)">
+            <g transform="matrix(1,0,0,1,3133.614517,0)">
+              <g transform="matrix(9.169382,0,0,9.169382,-8385.636614,-3152.547222)">
+                <path d="M993.135,366.666L993.135,382.933L982.564,382.933L982.564,438.742L964.325,438.742L964.325,382.933L953.7,382.933L953.7,366.666L993.135,366.666Z" style="fill:currentColor;fill-rule:nonzero;"/>
+              </g>
+            </g>
+          </g>
+        </svg>
+      </span>
+      <svg class="tb-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="tb-dropdown" id="logo-dropdown">
+      <div class="tb-menu-heading">Time Tracker</div>
+      <button class="tb-btn" id="menu-settings">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Hourly rate…
+      </button>
+      <div class="tb-sep-h"></div>
+      <button class="tb-btn" id="menu-export">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export (JSON)
+      </button>
+      <button class="tb-btn" id="menu-import">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Import (JSON)
+      </button>
+      <div class="tb-sep-h"></div>
+      <button class="tb-btn danger" id="menu-reset">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        Clear all
+      </button>
+    </div>
+  </div>
+  <div class="tb-view-switch">
+    <button class="tb-btn view-btn active" id="view-list-btn" data-view="list">List</button>
+    <button class="tb-btn view-btn" id="view-calendar-btn" data-view="calendar">Calendar</button>
+  </div>
+  <div class="tb-right">
+    <span id="running-indicator"><span class="dot"></span>Running</span>
+    <span id="grand-total">0:00:00<span class="cost">$0.00</span></span>
+  </div>
+</div>
+
+<div id="main">
+
+  <div id="list-view">
+    <div id="add-client-row">
+      <input id="new-client-input" class="text-input" placeholder="+ New client…">
+    </div>
+    <div id="clients-list"></div>
+    <div id="empty-state">No clients yet.<br>Add a client above to start tracking your time.</div>
+  </div>
+
+  <div id="calendar-view">
+    <div class="cal-nav">
+      <button class="icon-btn" id="cal-prev" title="Previous week">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="icon-btn" id="cal-next" title="Next week">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <button class="tb-btn" id="cal-today">Today</button>
+      <span class="cal-range-label" id="cal-range-label"></span>
+      <span class="cal-week-total" id="cal-week-total"></span>
+    </div>
+    <div class="cal-grid-wrap">
+      <div class="cal-header-row" id="cal-header-row"></div>
+      <div class="cal-body" id="cal-body">
+        <div class="cal-time-col" id="cal-time-col"></div>
+      </div>
+    </div>
+    <div id="calendar-empty">No tracked time this week yet.</div>
+  </div>
+
+</div>
+
+<div id="page-footer">
+  Time Tracker — 100% local and free. Your data stays in this browser (remember to export regularly).
+  <span class="footer-credit">© 2026 Concept by <a href="https://arnofaure.com" target="_blank" rel="noopener">Arno Faure</a> · Licensed under <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></span>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settings-overlay">
+  <div class="modal">
+    <button class="modal-close" id="settings-close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h2>Settings</h2>
+    <label for="rate-input">Default hourly rate</label>
+    <input id="rate-input" class="text-input" type="number" step="0.01" min="0" placeholder="50">
+    <label for="currency-input">Currency</label>
+    <input id="currency-input" class="text-input" maxlength="3" placeholder="$">
+    <div class="modal-actions">
+      <button class="tb-btn primary" id="settings-save" style="width:auto;">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- MANUAL TIME ENTRY MODAL -->
+<div class="modal-overlay" id="manual-time-overlay">
+  <div class="modal">
+    <button class="modal-close" id="manual-time-close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h2 id="manual-time-title">Add time</h2>
+    <label for="manual-date">Date</label>
+    <input id="manual-date" class="text-input" type="date">
+    <label for="manual-start">Start time</label>
+    <input id="manual-start" class="text-input" type="time">
+    <label for="manual-duration">Duration <span style="text-transform:none;opacity:.7;">(e.g. 1h30, 45m — or set an end time instead)</span></label>
+    <input id="manual-duration" class="text-input" type="text" placeholder="1h30">
+    <label for="manual-end">End time</label>
+    <input id="manual-end" class="text-input" type="time">
+    <div class="modal-actions">
+      <button class="tb-btn danger" id="manual-time-delete" style="width:auto;display:none;">Delete</button>
+      <button class="tb-btn primary" id="manual-time-save" style="width:auto;margin-left:auto;">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- TIME ENTRIES HISTORY MODAL -->
+<div class="modal-overlay" id="entries-overlay">
+  <div class="modal" style="max-width:440px;">
+    <button class="modal-close" id="entries-close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h2 id="entries-title">Time entries</h2>
+    <div class="entries-modal-list" id="entries-modal-list"></div>
+  </div>
+</div>
+
+<input type="file" id="import-file" accept="application/json" style="display:none">
+
+<script>
+(function() {
+  var STORAGE_KEY = 'timetracker.v1';
+  var currentView = 'list';
+  var weekStart = getWeekStart(new Date());
+
+  var PALETTE = ['#ec4899', '#3b82f6', '#22c55e', '#f59e0b', '#ef4444'];
+
+  function hashColor(id) {
+    var h = 0;
+    for (var i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+    return PALETTE[h % PALETTE.length];
+  }
+
+  function uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
+
+  function load() {
+    var d;
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      d = raw ? JSON.parse(raw) : null;
+    } catch (e) { d = null; }
+    if (!d) d = { settings: { rate: 50, currency: '$' }, clients: [] };
+    if (!d.settings) d.settings = { rate: 50, currency: '$' };
+    if (!d.clients) d.clients = [];
+    // Migrate legacy task shape (totalSeconds/runningSince) to entries[].
+    d.clients.forEach(function(c) {
+      if (!c.color) c.color = hashColor(c.id);
+      if (!c.projects) c.projects = [];
+      c.projects.forEach(function(p) {
+        if (!p.tasks) p.tasks = [];
+        p.tasks.forEach(function(t) {
+          if (t.billable === undefined) t.billable = true;
+          if (!t.entries) {
+            t.entries = [];
+            if (t.totalSeconds) {
+              var end = Date.now();
+              t.entries.push({ id: uid(), start: end - t.totalSeconds * 1000, end: end, manual: true });
+            }
+            if (t.runningSince) {
+              t.entries.push({ id: uid(), start: t.runningSince, end: null });
+            }
+            delete t.totalSeconds;
+            delete t.runningSince;
+          }
+        });
+      });
+    });
+    return d;
+  }
+
+  var data = load();
+
+  function save() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  function findClient(id) { return data.clients.find(function(c) { return c.id === id; }); }
+  function findProject(clientId, projectId) {
+    var c = findClient(clientId);
+    return c && c.projects.find(function(p) { return p.id === projectId; });
+  }
+  function findTask(clientId, projectId, taskId) {
+    var p = findProject(clientId, projectId);
+    return p && p.tasks.find(function(t) { return t.id === taskId; });
+  }
+
+  function isRunning(t) { return t.entries.some(function(e) { return e.end === null; }); }
+  function runningEntry(t) { return t.entries.find(function(e) { return e.end === null; }); }
+
+  function taskSeconds(t) {
+    var now = Date.now();
+    return t.entries.reduce(function(sum, e) {
+      var end = e.end === null ? now : e.end;
+      return sum + (end - e.start) / 1000;
+    }, 0);
+  }
+
+  function getProjectRate(p) {
+    return (p.rate !== undefined && p.rate !== null && p.rate !== '') ? Number(p.rate) : (Number(data.settings.rate) || 0);
+  }
+  function taskCost(t, p) {
+    if (t.billable === false) return 0;
+    return (taskSeconds(t) / 3600) * getProjectRate(p);
+  }
+  function projectSeconds(p) { return p.tasks.reduce(function(sum, t) { return sum + taskSeconds(t); }, 0); }
+  function projectCost(p) { return p.tasks.reduce(function(sum, t) { return sum + taskCost(t, p); }, 0); }
+  function clientSeconds(c) { return c.projects.reduce(function(sum, p) { return sum + projectSeconds(p); }, 0); }
+  function clientCost(c) { return c.projects.reduce(function(sum, p) { return sum + projectCost(p); }, 0); }
+  function grandSeconds() { return data.clients.reduce(function(sum, c) { return sum + clientSeconds(c); }, 0); }
+  function grandCost() { return data.clients.reduce(function(sum, c) { return sum + clientCost(c); }, 0); }
+
+  function anyRunning() {
+    return data.clients.some(function(c) {
+      return c.projects.some(function(p) { return p.tasks.some(function(t) { return isRunning(t); }); });
+    });
+  }
+
+  function stopAllRunning(exceptTaskId) {
+    data.clients.forEach(function(c) {
+      c.projects.forEach(function(p) {
+        p.tasks.forEach(function(t) {
+          if (t.id === exceptTaskId) return;
+          var e = runningEntry(t);
+          if (e) e.end = Date.now();
+        });
+      });
+    });
+  }
+
+  function formatHMS(totalSec) {
+    totalSec = Math.max(0, Math.round(totalSec));
+    var h = Math.floor(totalSec / 3600);
+    var m = Math.floor((totalSec % 3600) / 60);
+    var s = totalSec % 60;
+    return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  }
+
+  function formatMoney(amount) {
+    return (data.settings.currency || '$') + amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function svgIcon(name) {
+    var icons = {
+      arrow: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
+      trash: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>',
+      play: '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 21 12 6 21 6 3"/></svg>',
+      stop: '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>',
+      plus: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+      dollar: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+      dollarOff: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/><line x1="3" y1="3" x2="21" y2="21" stroke="#e0584a"/></svg>',
+      history: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>',
+      pencil: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>'
+    };
+    return icons[name] || '';
+  }
+
+  function esc(str) {
+    var d = document.createElement('div');
+    d.textContent = str == null ? '' : str;
+    return d.innerHTML;
+  }
+
+  // ---------- LIST VIEW ----------
+  function render() {
+    var listEl = document.getElementById('clients-list');
+    var emptyEl = document.getElementById('empty-state');
+    if (!data.clients.length) {
+      listEl.innerHTML = '';
+      emptyEl.classList.add('show');
+    } else {
+      emptyEl.classList.remove('show');
+      listEl.innerHTML = data.clients.map(renderClient).join('');
+    }
+    updateTotals();
+    if (currentView === 'calendar') renderCalendar();
+  }
+
+  function renderClient(c) {
+    var collapsedCls = c.collapsed ? ' collapsed' : '';
+    var body = c.collapsed ? '' :
+      '<div class="client-body">' +
+        '<div class="add-inline"><input class="text-input" data-action="add-project" data-client="' + c.id + '" placeholder="+ New project…"></div>' +
+        c.projects.map(function(p) { return renderProject(c, p); }).join('') +
+      '</div>';
+
+    var color = c.color || hashColor(c.id);
+    return (
+      '<div class="client-block' + collapsedCls + '" data-client-id="' + c.id + '" style="border-color:' + color + '55;">' +
+        '<div class="client-header">' +
+          '<button class="row-arrow" data-action="toggle-client" data-client="' + c.id + '">' + svgIcon('arrow') + '</button>' +
+          '<button class="client-color-btn" data-action="cycle-color" data-client="' + c.id + '" style="background:' + color + ';" title="Client color — click to change"></button>' +
+          '<input class="row-name" value="' + esc(c.name) + '" data-action="rename-client" data-client="' + c.id + '" placeholder="Client name">' +
+          '<span class="row-meta" data-role="client-meta" data-client="' + c.id + '">' + formatHMS(clientSeconds(c)) + '<span class="cost">' + formatMoney(clientCost(c)) + '</span></span>' +
+          '<button class="row-del" data-action="delete-client" data-client="' + c.id + '">' + svgIcon('trash') + '</button>' +
+        '</div>' +
+        body +
+      '</div>'
+    );
+  }
+
+  function renderProject(c, p) {
+    var collapsedCls = p.collapsed ? ' collapsed' : '';
+    var body = p.collapsed ? '' :
+      '<div class="project-body">' +
+        '<div class="add-inline"><input class="text-input" data-action="add-task" data-client="' + c.id + '" data-project="' + p.id + '" placeholder="+ New task…"></div>' +
+        p.tasks.map(function(t) { return renderTask(c, p, t); }).join('') +
+      '</div>';
+
+    var rateVal = (p.rate !== undefined && p.rate !== null) ? p.rate : '';
+
+    return (
+      '<div class="project-block' + collapsedCls + '" data-project-id="' + p.id + '">' +
+        '<div class="project-header">' +
+          '<button class="row-arrow" data-action="toggle-project" data-client="' + c.id + '" data-project="' + p.id + '">' + svgIcon('arrow') + '</button>' +
+          '<input class="row-name" value="' + esc(p.name) + '" data-action="rename-project" data-client="' + c.id + '" data-project="' + p.id + '" placeholder="Project name">' +
+          '<input class="rate-override" type="number" step="0.01" min="0" value="' + esc(rateVal) + '" placeholder="' + (Number(data.settings.rate) || 0) + '" title="Hourly rate override (leave empty to use the default rate)" data-action="rate-project" data-client="' + c.id + '" data-project="' + p.id + '">' +
+          '<span class="row-meta" data-role="project-meta" data-project="' + p.id + '">' + formatHMS(projectSeconds(p)) + '<span class="cost">' + formatMoney(projectCost(p)) + '</span></span>' +
+          '<button class="row-del" data-action="delete-project" data-client="' + c.id + '" data-project="' + p.id + '">' + svgIcon('trash') + '</button>' +
+        '</div>' +
+        body +
+      '</div>'
+    );
+  }
+
+  function renderTask(c, p, t) {
+    var running = isRunning(t);
+    var secs = taskSeconds(t);
+    var billable = t.billable !== false;
+    var costHtml = billable ? formatMoney(taskCost(t, p)) : '<span class="task-cost unbillable">Unbillable</span>';
+    return (
+      '<div class="task-row' + (running ? ' running' : '') + (billable ? '' : ' non-billable') + '" data-task-id="' + t.id + '">' +
+        '<button class="icon-btn ' + (running ? 'stop' : 'play') + '" data-action="toggle-timer" data-client="' + c.id + '" data-project="' + p.id + '" data-task="' + t.id + '" title="' + (running ? 'Stop' : 'Start') + '">' + svgIcon(running ? 'stop' : 'play') + '</button>' +
+        '<input class="task-name" value="' + esc(t.name) + '" data-action="rename-task" data-client="' + c.id + '" data-project="' + p.id + '" data-task="' + t.id + '" placeholder="Task name">' +
+        '<span class="task-time" data-role="task-time" data-task="' + t.id + '">' + formatHMS(secs) + '</span>' +
+        (billable ? '<span class="task-cost" data-role="task-cost" data-task="' + t.id + '">' + costHtml + '</span>' : '<span class="task-cost unbillable" data-role="task-cost" data-task="' + t.id + '">Unbillable</span>') +
+        '<button class="icon-btn billable-toggle' + (billable ? ' is-billable' : '') + '" data-action="toggle-billable" data-client="' + c.id + '" data-project="' + p.id + '" data-task="' + t.id + '" title="' + (billable ? 'Billable — click to mark as unbillable' : 'Unbillable — click to mark as billable') + '">' + svgIcon(billable ? 'dollar' : 'dollarOff') + '</button>' +
+        '<button class="icon-btn add-time" data-action="add-time" data-client="' + c.id + '" data-project="' + p.id + '" data-task="' + t.id + '" title="Add time manually">' + svgIcon('plus') + '</button>' +
+        '<button class="icon-btn add-time" data-action="open-entries" data-client="' + c.id + '" data-project="' + p.id + '" data-task="' + t.id + '" title="View / edit time entries">' + svgIcon('history') + '</button>' +
+        '<button class="row-del" data-action="delete-task" data-client="' + c.id + '" data-project="' + p.id + '" data-task="' + t.id + '">' + svgIcon('trash') + '</button>' +
+      '</div>'
+    );
+  }
+
+  function updateTotals() {
+    document.querySelectorAll('[data-role="client-meta"]').forEach(function(el) {
+      var c = findClient(el.getAttribute('data-client'));
+      if (!c) return;
+      el.innerHTML = formatHMS(clientSeconds(c)) + '<span class="cost">' + formatMoney(clientCost(c)) + '</span>';
+    });
+    document.querySelectorAll('[data-role="project-meta"]').forEach(function(el) {
+      var pid = el.getAttribute('data-project');
+      var p = null;
+      data.clients.some(function(c) { p = c.projects.find(function(pr) { return pr.id === pid; }); return p; });
+      if (!p) return;
+      el.innerHTML = formatHMS(projectSeconds(p)) + '<span class="cost">' + formatMoney(projectCost(p)) + '</span>';
+    });
+    document.querySelectorAll('[data-role="task-time"]').forEach(function(el) {
+      var tid = el.getAttribute('data-task');
+      var t = null, p = null;
+      data.clients.some(function(c) { return c.projects.some(function(pr) { t = pr.tasks.find(function(tk) { return tk.id === tid; }); if (t) p = pr; return t; }); });
+      if (!t) return;
+      el.textContent = formatHMS(taskSeconds(t));
+      var costEl = document.querySelector('[data-role="task-cost"][data-task="' + tid + '"]');
+      if (costEl && t.billable !== false) costEl.textContent = formatMoney(taskCost(t, p));
+    });
+
+    document.getElementById('grand-total').innerHTML = formatHMS(grandSeconds()) + '<span class="cost">' + formatMoney(grandCost()) + '</span>';
+    document.getElementById('running-indicator').classList.toggle('show', anyRunning());
+  }
+
+  setInterval(function() {
+    if (anyRunning()) {
+      updateTotals();
+      if (currentView === 'calendar') renderCalendar();
+    }
+  }, 1000);
+
+  // ---- Add client/project/task ----
+  function commitNewClient(inputEl) {
+    var name = inputEl.value.trim();
+    if (!name) return;
+    var id = uid();
+    data.clients.push({ id: id, name: name, collapsed: false, color: hashColor(id), projects: [] });
+    inputEl.value = '';
+    save(); render();
+  }
+  var newClientInput = document.getElementById('new-client-input');
+  newClientInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') commitNewClient(this); });
+  newClientInput.addEventListener('focusout', function() { commitNewClient(this); });
+
+  function commitAddInput(el) {
+    var action = el.getAttribute('data-action');
+    var name = el.value.trim();
+    if (!name) return;
+    if (action === 'add-project') {
+      var c = findClient(el.getAttribute('data-client'));
+      if (!c) return;
+      c.projects.push({ id: uid(), name: name, collapsed: false, tasks: [] });
+      el.value = '';
+      save(); render();
+    } else if (action === 'add-task') {
+      var p = findProject(el.getAttribute('data-client'), el.getAttribute('data-project'));
+      if (!p) return;
+      p.tasks.push({ id: uid(), name: name, billable: true, entries: [] });
+      el.value = '';
+      save(); render();
+    }
+  }
+
+  document.getElementById('clients-list').addEventListener('keydown', function(e) {
+    if (e.key !== 'Enter') return;
+    var el = e.target;
+    var action = el.getAttribute('data-action');
+    if (action === 'add-project' || action === 'add-task') commitAddInput(el);
+    else el.blur();
+  });
+
+  // Commit add-project/add-task inputs on blur too, so a typed name is never silently lost.
+  document.getElementById('clients-list').addEventListener('focusout', function(e) {
+    var el = e.target;
+    var action = el.getAttribute('data-action');
+    if (action === 'add-project' || action === 'add-task') commitAddInput(el);
+  });
+
+  document.getElementById('clients-list').addEventListener('input', function(e) {
+    var el = e.target;
+    var action = el.getAttribute('data-action');
+    if (action === 'rename-client') {
+      var c = findClient(el.getAttribute('data-client'));
+      if (c) { c.name = el.value; save(); }
+    } else if (action === 'rename-project') {
+      var p = findProject(el.getAttribute('data-client'), el.getAttribute('data-project'));
+      if (p) { p.name = el.value; save(); }
+    } else if (action === 'rename-task') {
+      var t = findTask(el.getAttribute('data-client'), el.getAttribute('data-project'), el.getAttribute('data-task'));
+      if (t) { t.name = el.value; save(); }
+    } else if (action === 'rate-project') {
+      var p2 = findProject(el.getAttribute('data-client'), el.getAttribute('data-project'));
+      if (p2) {
+        p2.rate = el.value === '' ? null : parseFloat(el.value);
+        save();
+        updateTotals();
+      }
+    }
+  });
+
+  document.getElementById('clients-list').addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    var action = btn.getAttribute('data-action');
+    var clientId = btn.getAttribute('data-client');
+    var projectId = btn.getAttribute('data-project');
+    var taskId = btn.getAttribute('data-task');
+
+    if (action === 'toggle-client') {
+      var c = findClient(clientId); c.collapsed = !c.collapsed; save(); render();
+    } else if (action === 'cycle-color') {
+      var cc = findClient(clientId);
+      var idx = PALETTE.indexOf(cc.color || hashColor(cc.id));
+      cc.color = PALETTE[(idx + 1) % PALETTE.length];
+      save(); render();
+    } else if (action === 'toggle-project') {
+      var p = findProject(clientId, projectId); p.collapsed = !p.collapsed; save(); render();
+    } else if (action === 'delete-client') {
+      var c2 = findClient(clientId);
+      if (confirm('Delete client "' + c2.name + '" and all its projects/tasks?')) {
+        data.clients = data.clients.filter(function(x) { return x.id !== clientId; });
+        save(); render();
+      }
+    } else if (action === 'delete-project') {
+      var c3 = findClient(clientId);
+      var p2 = findProject(clientId, projectId);
+      if (confirm('Delete project "' + p2.name + '" and all its tasks?')) {
+        c3.projects = c3.projects.filter(function(x) { return x.id !== projectId; });
+        save(); render();
+      }
+    } else if (action === 'delete-task') {
+      var p3 = findProject(clientId, projectId);
+      var t3 = findTask(clientId, projectId, taskId);
+      if (confirm('Delete task "' + t3.name + '"?')) {
+        p3.tasks = p3.tasks.filter(function(x) { return x.id !== taskId; });
+        save(); render();
+      }
+    } else if (action === 'toggle-timer') {
+      var t2 = findTask(clientId, projectId, taskId);
+      if (isRunning(t2)) {
+        runningEntry(t2).end = Date.now();
+      } else {
+        stopAllRunning(taskId);
+        t2.entries.push({ id: uid(), start: Date.now(), end: null });
+      }
+      save(); render();
+    } else if (action === 'toggle-billable') {
+      var t5 = findTask(clientId, projectId, taskId);
+      t5.billable = t5.billable === false ? true : false;
+      save(); render();
+    } else if (action === 'add-time') {
+      openManualTimeModal(clientId, projectId, taskId, null);
+    } else if (action === 'open-entries') {
+      openEntriesModal(clientId, projectId, taskId);
+    }
+  });
+
+  // ---- Duration parsing/formatting (e.g. "1h30", "45m", "90") ----
+  function parseDurationToMinutes(str) {
+    if (!str) return NaN;
+    str = str.trim().toLowerCase().replace(',', '.');
+    var m1 = str.match(/^(\d+(?:\.\d+)?)\s*h(?:\s*(\d+)\s*m?)?$/);
+    if (m1) return parseFloat(m1[1]) * 60 + (m1[2] ? parseInt(m1[2], 10) : 0);
+    var m2 = str.match(/^(\d+):(\d+)$/);
+    if (m2) return parseInt(m2[1], 10) * 60 + parseInt(m2[2], 10);
+    var m3 = str.match(/^(\d+(?:\.\d+)?)\s*m(?:in)?$/);
+    if (m3) return parseFloat(m3[1]);
+    var m4 = str.match(/^(\d+(?:\.\d+)?)$/);
+    if (m4) return parseFloat(m4[1]);
+    return NaN;
+  }
+  function formatMinutesAsDuration(mins) {
+    mins = Math.round(mins);
+    var h = Math.floor(mins / 60), m = mins % 60;
+    if (h && m) return h + 'h' + String(m).padStart(2, '0');
+    if (h) return h + 'h';
+    return m + 'm';
+  }
+
+  // ---- Manual time entry modal (add or edit) ----
+  var pendingManualTask = null;
+  var pendingManualEntryId = null;
+  var manualTimeOverlay = document.getElementById('manual-time-overlay');
+  var manualDateEl = document.getElementById('manual-date');
+  var manualStartEl = document.getElementById('manual-start');
+  var manualEndEl = document.getElementById('manual-end');
+  var manualDurationEl = document.getElementById('manual-duration');
+  var manualDeleteBtn = document.getElementById('manual-time-delete');
+
+  function pad2(n) { return String(n).padStart(2, '0'); }
+  function timeToVal(d) { return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+  function dateToVal(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+
+  function recomputeEndFromDuration() {
+    var mins = parseDurationToMinutes(manualDurationEl.value);
+    if (isNaN(mins) || !manualDateEl.value || !manualStartEl.value) return;
+    var dp = manualDateEl.value.split('-').map(Number);
+    var sp = manualStartEl.value.split(':').map(Number);
+    var start = new Date(dp[0], dp[1] - 1, dp[2], sp[0], sp[1]);
+    var end = new Date(start.getTime() + mins * 60000);
+    manualEndEl.value = timeToVal(end);
+  }
+  manualDurationEl.addEventListener('input', recomputeEndFromDuration);
+  manualStartEl.addEventListener('input', function() {
+    if (manualDurationEl.value.trim()) recomputeEndFromDuration();
+  });
+  manualEndEl.addEventListener('input', function() { manualDurationEl.value = ''; });
+
+  function openManualTimeModal(clientId, projectId, taskId, entryId) {
+    pendingManualTask = { clientId: clientId, projectId: projectId, taskId: taskId };
+    pendingManualEntryId = entryId;
+    var entry = entryId ? findTask(clientId, projectId, taskId).entries.find(function(e) { return e.id === entryId; }) : null;
+
+    if (entry) {
+      var s = new Date(entry.start), e = new Date(entry.end);
+      manualDateEl.value = dateToVal(s);
+      manualStartEl.value = timeToVal(s);
+      manualEndEl.value = timeToVal(e);
+      manualDurationEl.value = '';
+      document.getElementById('manual-time-title').textContent = 'Edit time entry';
+      document.getElementById('manual-time-save').textContent = 'Save';
+      manualDeleteBtn.style.display = 'flex';
+    } else {
+      var end = new Date();
+      var start = new Date(end.getTime() - 60 * 60 * 1000);
+      manualDateEl.value = dateToVal(end);
+      manualStartEl.value = timeToVal(start);
+      manualEndEl.value = timeToVal(end);
+      manualDurationEl.value = '';
+      document.getElementById('manual-time-title').textContent = 'Add time';
+      document.getElementById('manual-time-save').textContent = 'Add';
+      manualDeleteBtn.style.display = 'none';
+    }
+    manualTimeOverlay.classList.add('show');
+  }
+
+  document.getElementById('manual-time-close').addEventListener('click', function() { manualTimeOverlay.classList.remove('show'); });
+  manualTimeOverlay.addEventListener('click', function(e) { if (e.target === manualTimeOverlay) manualTimeOverlay.classList.remove('show'); });
+
+  document.getElementById('manual-time-save').addEventListener('click', function() {
+    if (!pendingManualTask) return;
+    var dateVal = manualDateEl.value;
+    var startVal = manualStartEl.value;
+    var endVal = manualEndEl.value;
+    if (!dateVal || !startVal || !endVal) { alert('Please fill in the date and start time, plus either a duration or an end time.'); return; }
+    var dp = dateVal.split('-').map(Number);
+    var sp = startVal.split(':').map(Number);
+    var ep = endVal.split(':').map(Number);
+    var start = new Date(dp[0], dp[1] - 1, dp[2], sp[0], sp[1]);
+    var end = new Date(dp[0], dp[1] - 1, dp[2], ep[0], ep[1]);
+    if (end.getTime() <= start.getTime()) { alert('End time must be after start time.'); return; }
+    var t = findTask(pendingManualTask.clientId, pendingManualTask.projectId, pendingManualTask.taskId);
+    if (t) {
+      if (pendingManualEntryId) {
+        var entry = t.entries.find(function(e) { return e.id === pendingManualEntryId; });
+        if (entry) { entry.start = start.getTime(); entry.end = end.getTime(); }
+      } else {
+        t.entries.push({ id: uid(), start: start.getTime(), end: end.getTime(), manual: true });
+      }
+      save(); render();
+    }
+    manualTimeOverlay.classList.remove('show');
+    // If we were editing from the history list, refresh it behind the scenes.
+    if (pendingManualEntryId && entriesOverlay.classList.contains('show')) renderEntriesList();
+    pendingManualTask = null;
+    pendingManualEntryId = null;
+  });
+
+  manualDeleteBtn.addEventListener('click', function() {
+    if (!pendingManualTask || !pendingManualEntryId) return;
+    if (!confirm('Delete this time entry?')) return;
+    var t = findTask(pendingManualTask.clientId, pendingManualTask.projectId, pendingManualTask.taskId);
+    if (t) {
+      t.entries = t.entries.filter(function(e) { return e.id !== pendingManualEntryId; });
+      save(); render();
+    }
+    manualTimeOverlay.classList.remove('show');
+    pendingManualTask = null;
+    pendingManualEntryId = null;
+  });
+
+  // ---- Time entries history modal ----
+  var entriesOverlay = document.getElementById('entries-overlay');
+  var pendingEntriesTask = null;
+
+  function openEntriesModal(clientId, projectId, taskId) {
+    pendingEntriesTask = { clientId: clientId, projectId: projectId, taskId: taskId };
+    var t = findTask(clientId, projectId, taskId);
+    document.getElementById('entries-title').textContent = 'Time entries — ' + (t.name || 'Untitled task');
+    renderEntriesList();
+    entriesOverlay.classList.add('show');
+  }
+
+  function renderEntriesList() {
+    if (!pendingEntriesTask) return;
+    var t = findTask(pendingEntriesTask.clientId, pendingEntriesTask.projectId, pendingEntriesTask.taskId);
+    var listEl = document.getElementById('entries-modal-list');
+    if (!t) { listEl.innerHTML = ''; return; }
+    var completed = t.entries.filter(function(e) { return e.end !== null; }).sort(function(a, b) { return b.start - a.start; });
+    if (!completed.length) {
+      listEl.innerHTML = '<div class="entries-empty">No completed time entries yet.</div>';
+      return;
+    }
+    listEl.innerHTML = completed.map(function(e) {
+      var s = new Date(e.start), en = new Date(e.end);
+      var dateStr = s.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      var timeStr = s.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) + '–' + en.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      var mins = (e.end - e.start) / 60000;
+      return (
+        '<div class="entry-row">' +
+          '<div class="entry-row-info">' +
+            '<span class="entry-row-date">' + dateStr + '</span>' +
+            '<span class="entry-row-time">' + timeStr + '<span class="entry-row-dur"> · ' + formatMinutesAsDuration(mins) + '</span></span>' +
+          '</div>' +
+          '<div class="entry-row-actions">' +
+            '<button class="icon-btn" data-entry-action="edit" data-entry="' + e.id + '" title="Edit">' + svgIcon('pencil') + '</button>' +
+            '<button class="icon-btn" data-entry-action="delete" data-entry="' + e.id + '" title="Delete">' + svgIcon('trash') + '</button>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  document.getElementById('entries-modal-list').addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-entry-action]');
+    if (!btn || !pendingEntriesTask) return;
+    var entryId = btn.getAttribute('data-entry');
+    var action = btn.getAttribute('data-entry-action');
+    var ct = pendingEntriesTask;
+    if (action === 'edit') {
+      entriesOverlay.classList.remove('show');
+      openManualTimeModal(ct.clientId, ct.projectId, ct.taskId, entryId);
+    } else if (action === 'delete') {
+      if (!confirm('Delete this time entry?')) return;
+      var t = findTask(ct.clientId, ct.projectId, ct.taskId);
+      t.entries = t.entries.filter(function(x) { return x.id !== entryId; });
+      save(); render();
+      renderEntriesList();
+    }
+  });
+
+  document.getElementById('entries-close').addEventListener('click', function() { entriesOverlay.classList.remove('show'); pendingEntriesTask = null; });
+  entriesOverlay.addEventListener('click', function(e) { if (e.target === entriesOverlay) { entriesOverlay.classList.remove('show'); pendingEntriesTask = null; } });
+
+  // ---- Logo dropdown menu ----
+  var logoBtn = document.getElementById('logo-btn');
+  var dropdown = document.getElementById('logo-dropdown');
+  logoBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    logoBtn.classList.toggle('open');
+    dropdown.classList.toggle('open');
+  });
+  document.addEventListener('click', function() {
+    logoBtn.classList.remove('open');
+    dropdown.classList.remove('open');
+  });
+
+  // ---- Settings modal ----
+  var settingsOverlay = document.getElementById('settings-overlay');
+  document.getElementById('menu-settings').addEventListener('click', function() {
+    document.getElementById('rate-input').value = data.settings.rate;
+    document.getElementById('currency-input').value = data.settings.currency;
+    settingsOverlay.classList.add('show');
+  });
+  document.getElementById('settings-close').addEventListener('click', function() { settingsOverlay.classList.remove('show'); });
+  settingsOverlay.addEventListener('click', function(e) { if (e.target === settingsOverlay) settingsOverlay.classList.remove('show'); });
+  document.getElementById('settings-save').addEventListener('click', function() {
+    var rate = parseFloat(document.getElementById('rate-input').value);
+    data.settings.rate = isNaN(rate) ? 0 : rate;
+    data.settings.currency = document.getElementById('currency-input').value.trim() || '$';
+    save(); render();
+    settingsOverlay.classList.remove('show');
+  });
+
+  // ---- Export / Import / Reset ----
+  document.getElementById('menu-export').addEventListener('click', function() {
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'time-tracker-export-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  var importFile = document.getElementById('import-file');
+  document.getElementById('menu-import').addEventListener('click', function() { importFile.click(); });
+  importFile.addEventListener('change', function() {
+    var file = this.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function() {
+      try {
+        var parsed = JSON.parse(reader.result);
+        if (!parsed.clients) throw new Error('invalid');
+        if (confirm('Importing this file will replace all current data. Continue?')) {
+          data = parsed;
+          if (!data.settings) data.settings = { rate: 50, currency: '$' };
+          save(); render();
+        }
+      } catch (e) {
+        alert('Invalid file.');
+      }
+      importFile.value = '';
+    };
+    reader.readAsText(file);
+  });
+
+  document.getElementById('menu-reset').addEventListener('click', function() {
+    if (confirm('Clear everything? This action is irreversible.')) {
+      data = { settings: data.settings, clients: [] };
+      save(); render();
+    }
+  });
+
+  // ---------- CALENDAR VIEW ----------
+  var DAY_MS = 24 * 60 * 60 * 1000;
+  var HOUR_PX = 48;
+
+  function getWeekStart(d) {
+    var date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    var day = date.getDay(); // 0 = Sun
+    var diff = (day === 0 ? -6 : 1 - day); // shift to Monday
+    date.setDate(date.getDate() + diff);
+    return date;
+  }
+
+  function sameDay(a, b) {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  }
+
+  function collectEntries() {
+    var out = [];
+    data.clients.forEach(function(c) {
+      c.projects.forEach(function(p) {
+        p.tasks.forEach(function(t) {
+          t.entries.forEach(function(e) {
+            out.push({
+              start: e.start,
+              end: e.end === null ? Date.now() : e.end,
+              running: e.end === null,
+              billable: t.billable !== false,
+              taskName: t.name || 'Untitled task',
+              projectName: p.name || 'Untitled project',
+              clientName: c.name || 'Untitled client',
+              color: c.color || hashColor(c.id)
+            });
+          });
+        });
+      });
+    });
+    return out;
+  }
+
+  function initCalendarSkeleton() {
+    var timeCol = document.getElementById('cal-time-col');
+    var html = '';
+    for (var h = 0; h < 24; h++) {
+      var label = (h === 0 ? '12 AM' : h < 12 ? h + ' AM' : h === 12 ? '12 PM' : (h - 12) + ' PM');
+      html += '<div class="cal-hour-label">' + label + '</div>';
+    }
+    timeCol.innerHTML = html;
+  }
+
+  function renderCalendar() {
+    var today = new Date();
+    var days = [];
+    for (var i = 0; i < 7; i++) days.push(new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i));
+
+    var monthFmt = { month: 'short', day: 'numeric' };
+    var rangeLabel = days[0].toLocaleDateString('en-US', monthFmt) + ' – ' + days[6].toLocaleDateString('en-US', monthFmt) + ', ' + days[6].getFullYear();
+    document.getElementById('cal-range-label').textContent = rangeLabel;
+
+    var dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    var headerHtml = '<div class="cal-header-cell"></div>';
+    days.forEach(function(d, i) {
+      var isToday = sameDay(d, today);
+      headerHtml += '<div class="cal-header-cell' + (isToday ? ' today' : '') + '">' + dayNames[i] + '<span class="cal-date-num">' + d.getDate() + '</span></div>';
+    });
+    document.getElementById('cal-header-row').innerHTML = headerHtml;
+
+    var allEntries = collectEntries();
+
+    var bodyEl = document.getElementById('cal-body');
+    // Rebuild day columns (keep the time column, which is static).
+    Array.from(bodyEl.querySelectorAll('.cal-day-col')).forEach(function(el) { el.remove(); });
+
+    var weekSeconds = 0, weekCost = 0;
+
+    days.forEach(function(dayDate) {
+      var dayStart = dayDate.getTime();
+      var dayEnd = dayStart + DAY_MS;
+      var col = document.createElement('div');
+      col.className = 'cal-day-col' + (sameDay(dayDate, today) ? ' today' : '');
+
+      allEntries.forEach(function(entry) {
+        var s = Math.max(entry.start, dayStart);
+        var e = Math.min(entry.end, dayEnd);
+        if (e <= s) return;
+        weekSeconds += (e - s) / 1000;
+        if (entry.billable) {
+          // cost attribution handled below via project rate is approximate here; use overall grand cost instead for header total.
+        }
+        var startMin = (s - dayStart) / 60000;
+        var durMin = (e - s) / 60000;
+        var top = startMin * (HOUR_PX / 60);
+        var height = Math.max(durMin * (HOUR_PX / 60), 14);
+        var block = document.createElement('div');
+        block.className = 'cal-block' + (entry.billable ? '' : ' non-billable');
+        block.style.top = top + 'px';
+        block.style.height = height + 'px';
+        block.style.background = entry.color;
+        var startStr = new Date(s).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        var endStr = new Date(e).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        block.title = entry.clientName + ' / ' + entry.projectName + ' — ' + entry.taskName + ' (' + startStr + '–' + endStr + ')' + (entry.billable ? '' : ' [unbillable]');
+        block.innerHTML = '<span class="cal-block-title">' + esc(entry.taskName) + '</span><span class="cal-block-time">' + startStr + '–' + endStr + '</span>';
+        col.appendChild(block);
+      });
+
+      if (sameDay(dayDate, today)) {
+        var now = new Date();
+        var nowMin = now.getHours() * 60 + now.getMinutes();
+        var line = document.createElement('div');
+        line.className = 'cal-now-line';
+        line.style.top = (nowMin * (HOUR_PX / 60)) + 'px';
+        col.appendChild(line);
+      }
+
+      bodyEl.appendChild(col);
+    });
+
+    weekCost = 0;
+    data.clients.forEach(function(c) {
+      c.projects.forEach(function(p) {
+        var rate = getProjectRate(p);
+        p.tasks.forEach(function(t) {
+          if (t.billable === false) return;
+          t.entries.forEach(function(e) {
+            var s = Math.max(e.start, weekStart.getTime());
+            var end = e.end === null ? Date.now() : e.end;
+            var eEnd = Math.min(end, weekStart.getTime() + 7 * DAY_MS);
+            if (eEnd <= s) return;
+            weekCost += ((eEnd - s) / 3600000) * rate;
+          });
+        });
+      });
+    });
+
+    document.getElementById('cal-week-total').innerHTML = formatHMS(weekSeconds) + '<span class="cost">' + formatMoney(weekCost) + '</span>';
+    document.getElementById('calendar-empty').classList.toggle('show', weekSeconds === 0);
+  }
+
+  document.getElementById('cal-prev').addEventListener('click', function() {
+    weekStart = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() - 7);
+    renderCalendar();
+  });
+  document.getElementById('cal-next').addEventListener('click', function() {
+    weekStart = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 7);
+    renderCalendar();
+  });
+  document.getElementById('cal-today').addEventListener('click', function() {
+    weekStart = getWeekStart(new Date());
+    renderCalendar();
+  });
+
+  // ---- View switch ----
+  function setView(view) {
+    currentView = view;
+    document.getElementById('list-view').classList.toggle('hide', view !== 'list');
+    document.getElementById('calendar-view').classList.toggle('show', view === 'calendar');
+    document.getElementById('view-list-btn').classList.toggle('active', view === 'list');
+    document.getElementById('view-calendar-btn').classList.toggle('active', view === 'calendar');
+    if (view === 'calendar') {
+      renderCalendar();
+      var bodyEl = document.getElementById('cal-body');
+      bodyEl.scrollTop = 7 * HOUR_PX;
+    }
+  }
+  document.getElementById('view-list-btn').addEventListener('click', function() { setView('list'); });
+  document.getElementById('view-calendar-btn').addEventListener('click', function() { setView('calendar'); });
+
+  initCalendarSkeleton();
+  render();
+})();
+</script>
+</body>
+</html>

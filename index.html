@@ -144,6 +144,12 @@
     text-align: left;
     border-color: transparent;
   }
+  .tb-shortcut {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.02em;
+  }
 
   /* VIEW SWITCH — top toolbar, always visible */
   .tb-view-switch {
@@ -293,6 +299,48 @@
   }
   .rate-override:hover, .rate-override:focus { border-color: var(--border-hover); color: var(--text); }
   .rate-override::placeholder { color: var(--text-dim); }
+
+  .estimate-input { width: 40px; }
+
+  .field-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .field-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .field-unit {
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  .gauge-pct {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    min-width: 30px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .project-gauge {
+    width: 54px;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .project-gauge-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.2s, background 0.2s;
+  }
 
   .row-meta {
     font-size: 12px;
@@ -617,6 +665,7 @@
       <button class="tb-btn" id="menu-export">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Export (JSON)
+        <span class="tb-shortcut">⌘S</span>
       </button>
       <button class="tb-btn" id="menu-import">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -919,19 +968,47 @@
       '</div>';
 
     var rateVal = (p.rate !== undefined && p.rate !== null) ? p.rate : '';
+    var estVal = (p.estimate !== undefined && p.estimate !== null) ? p.estimate : '';
+    var gauge = projectGaugeInfo(p);
+    var pctLabel = '<span class="gauge-pct" data-role="gauge-pct" data-project="' + p.id + '">' + (p.estimate ? Math.round(gauge.rawPct) + '%' : '') + '</span>';
 
     return (
       '<div class="project-block' + collapsedCls + '" data-project-id="' + p.id + '">' +
         '<div class="project-header">' +
           '<button class="row-arrow" data-action="toggle-project" data-client="' + c.id + '" data-project="' + p.id + '">' + svgIcon('arrow') + '</button>' +
           '<input class="row-name" value="' + esc(p.name) + '" data-action="rename-project" data-client="' + c.id + '" data-project="' + p.id + '" placeholder="Project name">' +
-          '<input class="rate-override" type="number" step="0.01" min="0" value="' + esc(rateVal) + '" placeholder="' + (Number(data.settings.rate) || 0) + '" title="Hourly rate override (leave empty to use the default rate)" data-action="rate-project" data-client="' + c.id + '" data-project="' + p.id + '">' +
+          '<span class="field-group" title="Estimated hours for this project — shows a progress gauge next to the name">' +
+            '<span class="field-label">Est.</span>' +
+            '<input class="rate-override estimate-input" type="number" step="0.5" min="0" value="' + esc(estVal) + '" placeholder="0" data-action="estimate-project" data-client="' + c.id + '" data-project="' + p.id + '">' +
+            '<span class="field-unit">h</span>' +
+          '</span>' +
+          '<div class="project-gauge" data-role="project-gauge" data-project="' + p.id + '" title="' + esc(gauge.title) + '">' +
+            '<div class="project-gauge-fill" data-role="project-gauge-fill" data-project="' + p.id + '" style="width:' + gauge.pct + '%;background:' + gauge.color + ';"></div>' +
+          '</div>' +
+          pctLabel +
+          '<span class="field-group" title="Hourly rate override for this project (leave empty to use the default rate)">' +
+            '<span class="field-label">Rate</span>' +
+            '<input class="rate-override" type="number" step="0.01" min="0" value="' + esc(rateVal) + '" placeholder="' + (Number(data.settings.rate) || 0) + '" data-action="rate-project" data-client="' + c.id + '" data-project="' + p.id + '">' +
+            '<span class="field-unit">/h</span>' +
+          '</span>' +
           '<span class="row-meta" data-role="project-meta" data-project="' + p.id + '">' + formatHMS(projectSeconds(p)) + '<span class="cost">' + formatMoney(projectCost(p)) + '</span></span>' +
           '<button class="row-del" data-action="delete-project" data-client="' + c.id + '" data-project="' + p.id + '">' + svgIcon('trash') + '</button>' +
         '</div>' +
         body +
       '</div>'
     );
+  }
+
+  function projectGaugeInfo(p) {
+    var estimateHours = Number(p.estimate) || 0;
+    if (!estimateHours) return { pct: 0, rawPct: 0, color: 'transparent', title: 'Set an estimate (hours) to track progress' };
+    var workedHours = projectSeconds(p) / 3600;
+    var pct = (workedHours / estimateHours) * 100;
+    var hue = Math.max(0, 142 - Math.min(pct, 100) / 100 * 142);
+    var color = 'hsl(' + Math.round(hue) + ', 72%, 58%)';
+    var title = workedHours.toFixed(1) + 'h / ' + estimateHours + 'h (' + Math.round(pct) + '%)';
+    if (pct > 100) title += ' — over estimate';
+    return { pct: Math.min(pct, 100), rawPct: pct, color: color, title: title };
   }
 
   function renderTask(c, p, t) {
@@ -965,6 +1042,19 @@
       data.clients.some(function(c) { p = c.projects.find(function(pr) { return pr.id === pid; }); return p; });
       if (!p) return;
       el.innerHTML = formatHMS(projectSeconds(p)) + '<span class="cost">' + formatMoney(projectCost(p)) + '</span>';
+    });
+    document.querySelectorAll('[data-role="project-gauge-fill"]').forEach(function(el) {
+      var pid = el.getAttribute('data-project');
+      var p = null;
+      data.clients.some(function(c) { p = c.projects.find(function(pr) { return pr.id === pid; }); return p; });
+      if (!p) return;
+      var gauge = projectGaugeInfo(p);
+      el.style.width = gauge.pct + '%';
+      el.style.background = gauge.color;
+      var wrap = document.querySelector('[data-role="project-gauge"][data-project="' + pid + '"]');
+      if (wrap) wrap.title = gauge.title;
+      var pctEl = document.querySelector('[data-role="gauge-pct"][data-project="' + pid + '"]');
+      if (pctEl) pctEl.textContent = Math.round(gauge.rawPct) + '%';
     });
     document.querySelectorAll('[data-role="task-time"]').forEach(function(el) {
       var tid = el.getAttribute('data-task');
@@ -1050,6 +1140,13 @@
       var p2 = findProject(el.getAttribute('data-client'), el.getAttribute('data-project'));
       if (p2) {
         p2.rate = el.value === '' ? null : parseFloat(el.value);
+        save();
+        updateTotals();
+      }
+    } else if (action === 'estimate-project') {
+      var p6 = findProject(el.getAttribute('data-client'), el.getAttribute('data-project'));
+      if (p6) {
+        p6.estimate = el.value === '' ? null : parseFloat(el.value);
         save();
         updateTotals();
       }
@@ -1331,7 +1428,7 @@
   });
 
   // ---- Export / Import / Reset ----
-  document.getElementById('menu-export').addEventListener('click', function() {
+  function exportData() {
     var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
@@ -1339,6 +1436,15 @@
     a.download = 'time-tracker-export-' + new Date().toISOString().slice(0, 10) + '.json';
     a.click();
     URL.revokeObjectURL(url);
+  }
+  document.getElementById('menu-export').addEventListener('click', exportData);
+
+  // Cmd/Ctrl+S also exports — everything already autosaves locally, this is the backup/export shortcut.
+  document.addEventListener('keydown', function(e) {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      exportData();
+    }
   });
 
   var importFile = document.getElementById('import-file');

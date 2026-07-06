@@ -782,6 +782,18 @@
   </div>
 </div>
 
+<!-- STALE TIMER MODAL -->
+<div class="modal-overlay" id="stale-timer-overlay">
+  <div class="modal">
+    <h2>Timer left running</h2>
+    <p id="stale-timer-desc" style="font-size:12.5px;line-height:1.5;color:var(--text-muted);"></p>
+    <div class="modal-actions">
+      <button class="tb-btn danger" id="stale-cut-btn" style="width:auto;">Stop it back then</button>
+      <button class="tb-btn primary" id="stale-keep-btn" style="width:auto;margin-left:auto;">Keep the time</button>
+    </div>
+  </div>
+</div>
+
 <input type="file" id="import-file" accept="application/json" style="display:none">
 
 <script>
@@ -1076,12 +1088,70 @@
     document.getElementById('running-indicator').classList.toggle('show', anyRunning());
   }
 
+  var tickCount = 0;
   setInterval(function() {
     if (anyRunning()) {
       updateTotals();
       if (currentView === 'calendar') renderCalendar();
+      // Record a "last known active" timestamp every ~10s while a timer runs, so that if the
+      // app gets closed/backgrounded, we can later tell how long it was actually gone for.
+      tickCount++;
+      if (tickCount % 10 === 0) recordHeartbeat();
     }
   }, 1000);
+
+  function recordHeartbeat() {
+    if (anyRunning()) {
+      data.lastHeartbeat = Date.now();
+      save();
+    }
+  }
+  document.addEventListener('visibilitychange', function() { if (document.hidden) recordHeartbeat(); });
+  window.addEventListener('pagehide', recordHeartbeat);
+  window.addEventListener('beforeunload', recordHeartbeat);
+
+  var STALE_TIMER_THRESHOLD_MS = 3 * 60 * 1000;
+
+  function checkStaleTimer() {
+    var found = null;
+    data.clients.some(function(c) {
+      return c.projects.some(function(p) {
+        return p.tasks.some(function(t) {
+          var e = runningEntry(t);
+          if (e) { found = { client: c, project: p, task: t, entry: e }; return true; }
+          return false;
+        });
+      });
+    });
+    if (!found) return;
+    var reference = data.lastHeartbeat && data.lastHeartbeat > found.entry.start ? data.lastHeartbeat : found.entry.start;
+    var gapMs = Date.now() - reference;
+    if (gapMs < STALE_TIMER_THRESHOLD_MS) return;
+
+    var gapMins = Math.round(gapMs / 60000);
+    var gapLabel = gapMins < 60 ? gapMins + ' min' : formatMinutesAsDuration(gapMins);
+    document.getElementById('stale-timer-desc').textContent =
+      'The timer for "' + (found.task.name || 'Untitled task') + '" (' + (found.client.name || 'Untitled client') + ' / ' + (found.project.name || 'Untitled project') +
+      ') looks like it kept running while this app was closed or inactive, for about ' + gapLabel + '. Do you want to count that time, or stop the timer back at when it was last seen active?';
+    pendingStaleEntry = found.entry;
+    pendingStaleReference = reference;
+    document.getElementById('stale-timer-overlay').classList.add('show');
+  }
+
+  var pendingStaleEntry = null;
+  var pendingStaleReference = null;
+  document.getElementById('stale-keep-btn').addEventListener('click', function() {
+    document.getElementById('stale-timer-overlay').classList.remove('show');
+    pendingStaleEntry = null;
+  });
+  document.getElementById('stale-cut-btn').addEventListener('click', function() {
+    if (pendingStaleEntry) {
+      pendingStaleEntry.end = pendingStaleReference;
+      save(); render();
+    }
+    document.getElementById('stale-timer-overlay').classList.remove('show');
+    pendingStaleEntry = null;
+  });
 
   // ---- Add client/project/task ----
   function commitNewClient(inputEl) {
@@ -1203,6 +1273,7 @@
       } else {
         stopAllRunning(taskId);
         t2.entries.push({ id: uid(), start: Date.now(), end: null });
+        data.lastHeartbeat = Date.now();
       }
       save(); render();
     } else if (action === 'toggle-billable') {
@@ -1651,6 +1722,7 @@
 
   initCalendarSkeleton();
   render();
+  checkStaleTimer();
 })();
 </script>
 </body>

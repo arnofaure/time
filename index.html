@@ -121,6 +121,29 @@
   }
   .tb-sep-h { height: 0.5px; background: var(--border); margin: 4px 2px; }
 
+  .tb-menu-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 8px 2px;
+    color: var(--text-dim);
+    font-size: 11px;
+  }
+  .tb-menu-footer-left { display: flex; align-items: center; gap: 14px; }
+  .tb-footer-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 4px;
+    margin: -2px -4px;
+    color: var(--text-dim);
+    text-decoration: none;
+    border-radius: var(--radius);
+    transition: color 0.15s, background 0.15s;
+  }
+  .tb-footer-link:hover { color: var(--text); background: var(--surface2); }
+
   .tb-btn {
     background: transparent;
     border: 0.5px solid var(--border);
@@ -591,7 +614,13 @@
     grid-template-columns: 52px repeat(7, 1fr);
     max-height: 560px;
     overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.15) transparent;
   }
+  .cal-body::-webkit-scrollbar { width: 8px; }
+  .cal-body::-webkit-scrollbar-track { background: transparent; }
+  .cal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+  .cal-body::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.28); }
   .cal-time-col { display: flex; flex-direction: column; }
   .cal-hour-label {
     height: 48px;
@@ -682,6 +711,23 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
         Clear all
       </button>
+      <div class="tb-sep-h"></div>
+      <a class="tb-btn" href="https://storyboard.arnofaure.com/" target="_blank" rel="noopener noreferrer" title="Open the Storyboard app">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg>
+        Storyboard App
+      </a>
+      <a class="tb-btn" href="https://blocking.arnofaure.com/" target="_blank" rel="noopener noreferrer" title="Open the Blocking app">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg>
+        Blocking App
+      </a>
+      <div class="tb-menu-footer">
+        <span class="tb-menu-footer-left">
+          <a class="tb-footer-link" href="https://github.com/arnofaure/time" target="_blank" rel="noopener noreferrer" title="View source on GitHub">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            GitHub
+          </a>
+        </span>
+      </div>
     </div>
   </div>
   <div class="tb-view-switch">
@@ -1380,7 +1426,9 @@
     var ep = endVal.split(':').map(Number);
     var start = new Date(dp[0], dp[1] - 1, dp[2], sp[0], sp[1]);
     var end = new Date(dp[0], dp[1] - 1, dp[2], ep[0], ep[1]);
-    if (end.getTime() <= start.getTime()) { alert('End time must be after start time.'); return; }
+    // A duration (or an end time typed earlier than the start) that pushes past midnight is
+    // valid — e.g. 22:00 + 5h = 03:00 the next day. Roll it forward a day instead of rejecting it.
+    if (end.getTime() <= start.getTime()) end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
     var t = findTask(pendingManualTask.clientId, pendingManualTask.projectId, pendingManualTask.taskId);
     if (t) {
       if (pendingManualEntryId) {

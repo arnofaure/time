@@ -520,6 +520,17 @@
   .modal-actions .tb-btn { border: 0.5px solid var(--border-hover); }
   .modal-actions .primary { background: var(--text); color: var(--bg); font-weight: 600; }
   .modal-actions .primary:hover { opacity: 0.85; background: var(--text); }
+  #help-modal { max-width: 440px; }
+  #help-modal ol {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-left: 20px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-muted);
+  }
+  #help-modal ol strong { color: var(--text); }
   .modal-close {
     position: absolute;
     top: 10px; right: 10px;
@@ -712,12 +723,45 @@
         Clear all
       </button>
       <div class="tb-sep-h"></div>
+      <button class="tb-btn" id="menu-help" title="Quick guide to using Time Tracker">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Help
+      </button>
+      <div class="tb-sep-h"></div>
       <a class="tb-btn" href="https://storyboard.arnofaure.com/" target="_blank" rel="noopener noreferrer" title="Open the Storyboard app">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg>
+        <svg width="13" height="13" viewBox="0 0 144 263" xmlns="http://www.w3.org/2000/svg">
+          <g transform="matrix(1,0,0,1,-1947.191749,-2025.796858)">
+            <g transform="matrix(0.355122,0,0,0.329408,1336.353603,1440.900366)">
+              <g transform="matrix(8.96689,0,0,9.666856,-6806.729886,-1690.322089)">
+                <path d="M992.777,381.448C990.516,380.083 988.105,379.07 985.545,378.408C982.985,377.747 979.913,377.288 976.329,377.032C976.031,376.99 975.743,376.958 975.465,376.936C975.188,376.915 974.921,376.904 974.665,376.904C973.769,376.904 973.321,377.267 973.321,377.992C973.321,378.419 973.567,378.707 974.057,378.856C974.548,379.006 975.22,379.123 976.073,379.208C977.737,379.422 979.487,379.667 981.321,379.944C983.156,380.222 984.948,380.638 986.697,381.192C988.447,381.747 990.036,382.558 991.465,383.624C992.895,384.691 994.025,386.099 994.857,387.848C995.689,389.598 996.105,391.795 996.105,394.44C996.105,397.384 995.423,430.871 994.057,432.855C992.692,434.839 990.847,436.417 988.521,437.591C986.196,438.764 983.551,439.607 980.585,440.119C977.62,440.631 974.559,440.887 971.401,440.887C967.732,440.929 964.095,440.727 960.489,440.279C956.884,439.831 953.695,439.265 950.921,438.583L952.713,385.032C953.695,385.758 954.868,386.536 956.233,387.368C957.599,388.2 959.455,388.958 961.801,389.64C964.148,390.323 967.241,390.856 971.081,391.24C971.295,391.283 971.497,391.304 971.689,391.304L972.233,391.304C972.703,391.304 973.055,391.24 973.289,391.112C973.524,390.984 973.641,390.707 973.641,390.28C973.641,389.811 973.439,389.512 973.033,389.384C972.628,389.256 971.999,389.128 971.145,389C968.841,388.744 966.548,388.382 964.265,387.912C961.983,387.443 959.903,386.718 958.025,385.736C956.148,384.755 954.644,383.39 953.513,381.64C952.383,379.891 951.817,377.608 951.817,374.792C951.817,370.782 952.767,367.592 954.665,365.224C956.564,362.856 959.135,361.15 962.377,360.104C965.62,359.059 969.247,358.536 973.257,358.536C976.628,358.536 980.148,358.846 983.817,359.464C987.487,360.083 991.113,360.926 994.697,361.992L992.777,381.448Z" fill="currentColor"/>
+              </g>
+            </g>
+          </g>
+        </svg>
         Storyboard App
       </a>
+      <a class="tb-btn" href="https://moodboard.arnofaure.com/" target="_blank" rel="noopener noreferrer" title="Open the Moodboard app">
+        <svg width="13" height="13" viewBox="0 0 362 661" xmlns="http://www.w3.org/2000/svg">
+          <g transform="matrix(1,0,0,1,-4844.154675,-209.556655)">
+            <g transform="matrix(1,0,0,1,4484.954004,0)">
+              <g transform="matrix(7.335506,0,0,7.335506,-6600.710179,-2480.126447)">
+                <path d="M965.065,456.761L948.798,456.761L949.784,366.666L970.98,366.666L973.281,380.852L973.773,380.852L976.074,366.666L997.106,366.666L998.092,456.761L981.825,456.761L981.825,386.932L981.332,386.932L977.881,456.761L969.008,456.761L965.558,386.384L965.065,386.384L965.065,456.761Z" fill="currentColor"/>
+              </g>
+            </g>
+          </g>
+        </svg>
+        Moodboard App
+      </a>
       <a class="tb-btn" href="https://blocking.arnofaure.com/" target="_blank" rel="noopener noreferrer" title="Open the Blocking app">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg>
+        <svg width="13" height="13" viewBox="0 0 144 263" xmlns="http://www.w3.org/2000/svg">
+          <g transform="matrix(1,0,0,1,-569.299967,-2025.796858)">
+            <g transform="matrix(0.355122,0,0,0.329408,-42.107321,1440.900366)">
+              <g transform="matrix(47.026346,0,0,50.697276,-16005.026153,-16845.866285)">
+                <path d="M384.633,371.747C384.913,371.963 385.135,372.251 385.299,372.611C385.463,372.971 385.545,373.411 385.545,373.931C385.545,374.595 385.413,381.582 385.149,381.966C384.885,382.35 384.537,382.62 384.105,382.776C383.673,382.932 383.209,383.01 382.713,383.01L376.953,383.01L376.953,367.307L382.173,367.307C382.693,367.307 383.185,367.397 383.649,367.577C384.113,367.757 384.491,368.039 384.783,368.423C385.075,368.807 385.221,369.299 385.221,369.899C385.221,370.347 385.171,370.721 385.071,371.021C384.971,371.321 384.825,371.563 384.633,371.747ZM381.513,370.343L380.625,370.343L380.625,370.991L381.561,370.991C381.625,370.991 381.695,370.971 381.771,370.931C381.847,370.891 381.885,370.807 381.885,370.679C381.885,370.543 381.839,370.453 381.747,370.409C381.655,370.365 381.577,370.343 381.513,370.343ZM380.625,373.499L381.873,373.499C381.937,373.499 382.007,373.479 382.083,373.439C382.159,373.399 382.197,373.315 382.197,373.187C382.197,373.051 382.151,372.961 382.059,372.917C381.967,372.873 381.889,372.851 381.825,372.851L380.625,372.851L380.625,373.499Z" fill="currentColor"/>
+              </g>
+            </g>
+          </g>
+        </svg>
         Blocking App
       </a>
       <div class="tb-menu-footer">
@@ -727,6 +771,7 @@
             GitHub
           </a>
         </span>
+        <span class="tb-version">v0.1.0</span>
       </div>
     </div>
   </div>
@@ -792,6 +837,22 @@
     <div class="modal-actions">
       <button class="tb-btn primary" id="settings-save" style="width:auto;">Save</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="help-overlay">
+  <div class="modal" id="help-modal">
+    <button class="modal-close" id="help-close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <h2>How to use Time Tracker</h2>
+    <ol>
+      <li><strong>Everything stays on your device.</strong> Time Tracker runs entirely in your browser — your entries are never uploaded, no account needed.</li>
+      <li><strong>Track time</strong> from the List or Calendar view, or add an entry manually with a date, start time, and duration.</li>
+      <li><strong>Set your hourly rate and currency</strong> in Settings to see earnings alongside tracked time.</li>
+      <li><strong>Nothing is saved to a file automatically.</strong> Use <strong>Export (JSON)</strong> (<kbd>Cmd/Ctrl+S</kbd>, in this menu) to download a backup, and <strong>Import (JSON)</strong> to restore it later.</li>
+    </ol>
+    <p style="margin-top:16px;font-size:11px;color:var(--text-dim);line-height:1.6;">Bug, idea, or feature request? I'd love to hear from you —<br><a href="mailto:info@arnofaure.com" style="color:var(--text-muted);">info@arnofaure.com</a></p>
   </div>
 </div>
 
@@ -1551,6 +1612,12 @@
     save(); render();
     settingsOverlay.classList.remove('show');
   });
+
+  // ---- Help modal ----
+  var helpOverlay = document.getElementById('help-overlay');
+  document.getElementById('menu-help').addEventListener('click', function() { helpOverlay.classList.add('show'); });
+  document.getElementById('help-close').addEventListener('click', function() { helpOverlay.classList.remove('show'); });
+  helpOverlay.addEventListener('click', function(e) { if (e.target === helpOverlay) helpOverlay.classList.remove('show'); });
 
   // ---- Export / Import / Reset ----
   function exportData() {

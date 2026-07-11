@@ -47,6 +47,10 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
     font-size: 13px;
     min-height: 100vh;
+    transition: background 0.4s ease;
+  }
+  body.is-recording {
+    background: linear-gradient(rgba(74,222,128,0.09), rgba(74,222,128,0.09)), var(--bg);
   }
 
   button, input { font-family: inherit; }
@@ -373,6 +377,58 @@
     height: 100%;
     border-radius: 3px;
     transition: width 0.2s, background 0.2s;
+  }
+
+  #active-recap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+  }
+  .recap-chip {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 9px;
+    background: var(--surface2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 12px;
+  }
+  .recap-chip.running {
+    border-color: rgba(74,222,128,0.35);
+    background: rgba(74,222,128,0.08);
+  }
+  .recap-chip .recap-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text-dim);
+    flex-shrink: 0;
+  }
+  .recap-chip .recap-dot-running {
+    background: #4ade80;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  .recap-chip .recap-name {
+    color: var(--text);
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .recap-chip .recap-pct {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+  }
+  .recap-chip.running .recap-pct { color: #4ade80; }
+  .recap-empty {
+    font-size: 12px;
+    color: var(--text-dim);
+    padding: 3px 2px;
   }
 
   .row-meta {
@@ -796,6 +852,7 @@
 <div id="main">
 
   <div id="list-view">
+    <div id="active-recap"></div>
     <div id="add-client-row">
       <input id="new-client-input" class="text-input" placeholder="+ New client…">
     </div>
@@ -1003,6 +1060,43 @@
   function grandSeconds() { return data.clients.reduce(function(sum, c) { return sum + clientSeconds(c); }, 0); }
   function grandCost() { return data.clients.reduce(function(sum, c) { return sum + clientCost(c); }, 0); }
 
+  function inProgressProjects() {
+    var out = [];
+    data.clients.forEach(function(c) {
+      c.projects.forEach(function(p) {
+        var estimateHours = Number(p.estimate) || 0;
+        if (!estimateHours) return;
+        var running = p.tasks.some(function(t) { return isRunning(t); });
+        var pct = (projectSeconds(p) / 3600 / estimateHours) * 100;
+        if (!running && pct >= 100) return;
+        out.push({ project: p, running: running });
+      });
+    });
+    out.sort(function(a, b) { return (b.running ? 1 : 0) - (a.running ? 1 : 0); });
+    return out;
+  }
+
+  function renderActiveRecap() {
+    var el = document.getElementById('active-recap');
+    var entries = inProgressProjects();
+    if (!entries.length) {
+      el.innerHTML = '<span class="recap-empty">No projects in progress</span>';
+      return;
+    }
+    el.innerHTML = entries.map(function(entry) {
+      var p = entry.project;
+      var gauge = projectGaugeInfo(p);
+      var dotCls = entry.running ? 'recap-dot recap-dot-running' : 'recap-dot';
+      return (
+        '<span class="recap-chip' + (entry.running ? ' running' : '') + '" title="' + esc(gauge.title) + '">' +
+          '<span class="' + dotCls + '"></span>' +
+          '<span class="recap-name">' + esc(p.name || 'Untitled project') + '</span>' +
+          '<span class="recap-pct">' + Math.round(gauge.rawPct) + '%</span>' +
+        '</span>'
+      );
+    }).join('');
+  }
+
   function anyRunning() {
     return data.clients.some(function(c) {
       return c.projects.some(function(p) { return p.tasks.some(function(t) { return isRunning(t); }); });
@@ -1201,6 +1295,8 @@
 
     document.getElementById('grand-total').innerHTML = formatHMS(grandSeconds()) + '<span class="cost">' + formatMoney(grandCost()) + '</span>';
     document.getElementById('running-indicator').classList.toggle('show', anyRunning());
+    document.body.classList.toggle('is-recording', anyRunning());
+    renderActiveRecap();
   }
 
   var tickCount = 0;

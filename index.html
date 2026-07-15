@@ -1729,7 +1729,9 @@
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'time-tracker-export-' + new Date().toISOString().slice(0, 10) + '.json';
+    var now = new Date();
+    var stamp = now.toISOString().slice(0, 10) + '_' + now.toTimeString().slice(0, 5).replace(':', '-');
+    a.download = 'time-tracker-export-' + stamp + '.json';
     a.click();
     URL.revokeObjectURL(url);
   }

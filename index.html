@@ -483,10 +483,33 @@
     padding: 7px 6px;
     border-radius: var(--radius);
     transition: background 0.1s;
+    position: relative;
   }
   .task-row:hover { background: rgba(255,255,255,0.03); }
   .task-row + .task-row { border-top: 0.5px solid var(--border); }
   .task-row.non-billable .task-name { color: var(--text-muted); }
+
+  .task-pct {
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+    min-width: 36px;
+    text-align: right;
+  }
+  .task-row.running .task-pct { color: #4ade80; }
+  /* Thin line along the bottom of each task row, filled to that task's
+     share of the project's total time — a quick visual read of where the
+     time actually went without having to compare the numbers by eye. */
+  .task-pct-bar-track {
+    position: absolute; left: 6px; right: 6px; bottom: 0; height: 2px;
+    background: rgba(255,255,255,0.06); border-radius: 1px; overflow: hidden;
+  }
+  .task-pct-bar-fill {
+    height: 100%; background: var(--text-muted); border-radius: 1px;
+    transition: width 0.2s;
+  }
+  .task-row.running .task-pct-bar-fill { background: #4ade80; }
 
   .task-name {
     font-size: 12.5px;
@@ -1054,6 +1077,12 @@
     return (taskSeconds(t) / 3600) * getProjectRate(p);
   }
   function projectSeconds(p) { return p.tasks.reduce(function(sum, t) { return sum + taskSeconds(t); }, 0); }
+  // Share of the project's total time this one task accounts for — used to
+  // draw the per-task percentage and progress line in the task list.
+  function taskPct(t, p) {
+    var total = projectSeconds(p);
+    return total > 0 ? (taskSeconds(t) / total * 100) : 0;
+  }
   function projectCost(p) { return p.tasks.reduce(function(sum, t) { return sum + taskCost(t, p); }, 0); }
   function clientSeconds(c) { return c.projects.reduce(function(sum, p) { return sum + projectSeconds(p); }, 0); }
   function clientCost(c) { return c.projects.reduce(function(sum, p) { return sum + projectCost(p); }, 0); }
@@ -1243,16 +1272,19 @@
     var secs = taskSeconds(t);
     var billable = t.billable !== false;
     var costHtml = billable ? formatMoney(taskCost(t, p)) : '<span class="task-cost unbillable">Unbillable</span>';
+    var pct = taskPct(t, p);
     return (
       '<div class="task-row' + (running ? ' running' : '') + (billable ? '' : ' non-billable') + '" data-task-id="' + t.id + '">' +
         '<button class="icon-btn ' + (running ? 'stop' : 'play') + '" data-action="toggle-timer" data-client="' + c.id + '" data-project="' + p.id + '" data-task="' + t.id + '" title="' + (running ? 'Stop' : 'Start') + '">' + svgIcon(running ? 'stop' : 'play') + '</button>' +
         '<input class="task-name" value="' + esc(t.name) + '" data-action="rename-task" data-client="' + c.id + '" data-project="' + p.id + '" data-task="' + t.id + '" placeholder="Task name">' +
         '<span class="task-time" data-role="task-time" data-task="' + t.id + '">' + formatHMS(secs) + '</span>' +
+        '<span class="task-pct" data-role="task-pct" data-task="' + t.id + '" title="Share of this project\'s total tracked time">' + Math.round(pct) + '%</span>' +
         (billable ? '<span class="task-cost" data-role="task-cost" data-task="' + t.id + '">' + costHtml + '</span>' : '<span class="task-cost unbillable" data-role="task-cost" data-task="' + t.id + '">Unbillable</span>') +
         '<button class="icon-btn billable-toggle' + (billable ? ' is-billable' : '') + '" data-action="toggle-billable" data-client="' + c.id + '" data-project="' + p.id + '" data-task="' + t.id + '" title="' + (billable ? 'Billable — click to mark as unbillable' : 'Unbillable — click to mark as billable') + '">' + svgIcon(billable ? 'dollar' : 'dollarOff') + '</button>' +
         '<button class="icon-btn add-time" data-action="add-time" data-client="' + c.id + '" data-project="' + p.id + '" data-task="' + t.id + '" title="Add time manually">' + svgIcon('plus') + '</button>' +
         '<button class="icon-btn add-time" data-action="open-entries" data-client="' + c.id + '" data-project="' + p.id + '" data-task="' + t.id + '" title="View / edit time entries">' + svgIcon('history') + '</button>' +
         '<button class="row-del" data-action="delete-task" data-client="' + c.id + '" data-project="' + p.id + '" data-task="' + t.id + '">' + svgIcon('trash') + '</button>' +
+        '<div class="task-pct-bar-track"><div class="task-pct-bar-fill" data-role="task-pct-bar" data-task="' + t.id + '" style="width:' + pct + '%"></div></div>' +
       '</div>'
     );
   }
@@ -1291,6 +1323,14 @@
       el.textContent = formatHMS(taskSeconds(t));
       var costEl = document.querySelector('[data-role="task-cost"][data-task="' + tid + '"]');
       if (costEl && t.billable !== false) costEl.textContent = formatMoney(taskCost(t, p));
+      // A running task's seconds change every tick, which shifts every
+      // sibling task's share of the project total too — so all of them
+      // (not just the running one) need their percentage refreshed here.
+      var pct = taskPct(t, p);
+      var pctEl = document.querySelector('[data-role="task-pct"][data-task="' + tid + '"]');
+      if (pctEl) pctEl.textContent = Math.round(pct) + '%';
+      var barEl = document.querySelector('[data-role="task-pct-bar"][data-task="' + tid + '"]');
+      if (barEl) barEl.style.width = pct + '%';
     });
 
     document.getElementById('grand-total').innerHTML = formatHMS(grandSeconds()) + '<span class="cost">' + formatMoney(grandCost()) + '</span>';

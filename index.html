@@ -13,6 +13,12 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0d0d0d">
 
+<!-- Installable as a standalone app (desktop/Android "Install", iOS "Add to Home Screen") -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Time Tracker">
+
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://time.arnofaure.com">
 <meta property="og:title" content="Time Tracker — 100% Free Time Tracking Web App">
@@ -1985,6 +1991,16 @@
   render();
   checkStaleTimer();
 })();
+</script>
+
+<script>
+// Registers the offline app-shell cache — lets the installed app (or a
+// browser tab) keep working without a network connection after first load.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js').catch(function() {});
+  });
+}
 </script>
 </body>
 </html>
